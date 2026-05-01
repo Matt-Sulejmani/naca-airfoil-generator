@@ -1,0 +1,126 @@
+name: Build & Release
+
+# Triggers on pushing a version tag, e.g.:  git tag v1.0.0 && git push --tags
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  # Also allows manual trigger from the Actions tab
+  workflow_dispatch:
+
+permissions:
+  contents: write   # needed to upload release assets
+
+jobs:
+  # ─────────────────────────────────────────────
+  # Windows build  →  NACA_Airfoil_Generator.exe
+  # ─────────────────────────────────────────────
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build with PyInstaller
+        run: pyinstaller naca_airfoil.spec
+
+      # Zip the output folder for clean release attachment
+      - name: Zip Windows build
+        run: |
+          cd dist
+          Compress-Archive -Path NACA_Airfoil_Generator -DestinationPath ../NACA_Airfoil_Generator_Windows.zip
+        shell: pwsh
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: NACA_Airfoil_Generator_Windows.zip
+
+  # ─────────────────────────────────────────────
+  # Linux build  →  NACA_Airfoil_Generator (ELF)
+  # ─────────────────────────────────────────────
+  build-linux:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      # Tkinter needs the system package on Ubuntu runners
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y python3-tk libgl1 libglu1-mesa
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build with PyInstaller
+        run: pyinstaller naca_airfoil.spec
+
+      - name: Zip Linux build
+        run: |
+          cd dist
+          tar -czf ../NACA_Airfoil_Generator_Linux.tar.gz NACA_Airfoil_Generator
+
+      - name: Upload Linux artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-build
+          path: NACA_Airfoil_Generator_Linux.tar.gz
+
+  # ─────────────────────────────────────────────
+  # Attach both builds to the GitHub Release
+  # ─────────────────────────────────────────────
+  release:
+    needs: [build-windows, build-linux]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Windows artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-build
+
+      - name: Download Linux artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-build
+
+      - name: Create GitHub Release and upload assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            NACA_Airfoil_Generator_Windows.zip
+            NACA_Airfoil_Generator_Linux.tar.gz
+          generate_release_notes: true   # auto-generates changelog from commits
+          body: |
+            ## NACA Airfoil Generator ${{ github.ref_name }}
+
+            ### Downloads
+            | Platform | File | Notes |
+            |----------|------|-------|
+            | 🪟 Windows 10/11 | `NACA_Airfoil_Generator_Windows.zip` | Extract and run `NACA_Airfoil_Generator.exe` |
+            | 🐧 Linux (Ubuntu 22.04+) | `NACA_Airfoil_Generator_Linux.tar.gz` | Extract and run `./NACA_Airfoil_Generator` |
+
+            ### No Python required — fully self-contained builds.

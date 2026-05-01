@@ -1,9 +1,12 @@
 """
-Airfoil Export Module — CSV and STEP formats.
+exporter.py
+===========
+Airfoil Export Module — CSV and STEP formats. Provides the 
 
 MIT License - Copyright (c) 2025
 """
 
+# ── Imports and dependencies ──────────────────────────────────────────────────────────────────────
 import csv
 import numpy as np
 from pathlib import Path

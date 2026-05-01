@@ -6,17 +6,18 @@ and point count; live preview; and CSV / STEP export.
 
 MIT License - Copyright (c) 2025
 """
-
+# ── Imports and dependencies ──────────────────────────────────────────────────────────────────────
+import threading
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
+
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-import threading
 
 from airfoil.geometry import generate_airfoil, get_properties
 from airfoil.exporter import export_csv, export_step
 from airfoil.plotter  import build_figure, plot_airfoil
 
-# ── Colour palette ──────────────────────────────────────────────────────────
+# ── Styling for components ────────────────────────────────────────────────────────────────────────
 BG        = "#1a1a2e"
 BG2       = "#16213e"
 BG3       = "#0f3460"
