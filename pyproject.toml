@@ -1,0 +1,11 @@
+[project]
+name = "naca-airfoil-generator"
+version = "0.1.0"
+description = "A software tool designed to generate NACA airfoil profiles."
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "cadquery>=2.7.0",
+    "matplotlib>=3.10.9",
+    "numpy>=2.4.4",
+]
